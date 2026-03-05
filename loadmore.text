@@ -1,0 +1,78 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const products_on_page = document.querySelector(".product-grid-container .product-grid");
+  const loadMoreBtn = document.querySelector("#load-more-button");
+  if (!products_on_page) return;
+  const visibleProducts = products_on_page.querySelectorAll("li");
+  const nextUrl = products_on_page.getAttribute("data-next-url");
+  if (!visibleProducts.length || !nextUrl) {
+    loadMoreBtn.style.display = "none";
+  } else {
+    loadMoreBtn.style.display = "inline-block";
+  }
+});
+
+const loadMoreBtn = document.querySelector("#load-more-button");
+if (loadMoreBtn) {
+  loadMoreBtn.addEventListener("click", LoadMoreFunction);
+}
+
+async function LoadMoreFunction() {
+    console.log("Load More button clicked!");
+  const products_on_page = document.querySelector(".product-grid-container .product-grid");
+  console.log(products_on_page);
+  const loadMoreBtn = document.querySelector("#load-more-button");
+  let nextUrl = products_on_page.getAttribute("data-next-url");
+  const visibleProducts = products_on_page.querySelectorAll("li");
+
+  if (!visibleProducts.length || !nextUrl) {
+    loadMoreBtn.style.display = "none";
+    return;
+  }
+
+  loadMoreBtn.disabled = true;
+  loadMoreBtn.textContent = "Loading...";
+
+  try {
+    const response = await fetch(nextUrl);
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    const htmlText = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, "text/html");
+    const newProducts = doc.querySelector(".product-grid-container .product-grid");
+    console.log("Data", newProducts);
+    if (!newProducts || !newProducts.querySelectorAll("li").length) {
+      loadMoreBtn.style.display = "none";
+      return;
+    }
+    products_on_page.insertAdjacentHTML("beforeend", newProducts.innerHTML);
+    document.dispatchEvent(new Event("swym:collections-loaded"));
+    const newNextUrl = newProducts.getAttribute("data-next-url");
+    if (newNextUrl) {
+      products_on_page.setAttribute("data-next-url", newNextUrl);
+      loadMoreBtn.disabled = false;
+      loadMoreBtn.textContent = "Load More";
+    } else {
+      products_on_page.removeAttribute("data-next-url");
+      loadMoreBtn.style.display = "none";
+    }
+  } catch (error) {
+    console.error("Fetch error:", error);
+    loadMoreBtn.disabled = false;
+    loadMoreBtn.textContent = "Load More";
+  }
+}
+<ul
+              id="product-grid"
+              data-id="{{ section.id }}"
+              class="
+                grid product-grid grid--{{ section.settings.columns_mobile }}-col-tablet-down
+                grid--{{ section.settings.columns_desktop }}-col-desktop
+                {% if section.settings.quick_add == 'bulk' %} collection-quick-add-bulk{% endif %}
+              "
+              data-next-url="{{ paginate.next.url }}"
+            >
+
+
+            <div class="load-more-btn">
+              <button class="button button--primary" id="load-more-button">{{ 'Load more' }}</button>
+            </div>
